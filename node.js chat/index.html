@@ -1,0 +1,279 @@
+<html>
+	<head>
+	<title>Chat uygulaması</title>
+		<style>
+			#chat{
+				height:500px;
+				
+			}
+			#contentWrap{
+				display:none;
+			}
+			#chatWrap{
+			float:left;
+			border: 1px #000 solid;
+			}
+			.error{
+			color:red;
+			}
+			.whisper{
+			color:gray;
+			font-style: italic;
+			}
+			.a{
+			color:blue;
+			font-style: italic;
+			}
+			 #users{
+			position: absolute;
+			color:blue;
+			left: 500px;
+			top: 30px;
+			}
+			 #form{
+			position: absolute;
+			color:blue;
+			left: 500px;
+			top: 10px;
+			}
+
+.button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+     position: absolute;
+     top:90px;
+    left: 900px;
+}
+
+
+#ip{
+	color: red;
+    font-family: courier;
+    font-size: 160%;
+	 position: relative;
+     top:0px;
+    left: 400px;
+}
+#ip4{
+	color: red;
+    font-family: courier;
+    font-size: 160%;
+	 position: absolute;
+     top:0px;
+    left: 00px;
+}
+#userInput {
+            position: absolute;
+            left: 400px;
+            right: 10px;
+            top: 60px;
+           
+        }
+
+        #yaz{
+            position: absolute;
+            left: 540px;
+            right: 10px;
+            top: 60px;
+           
+        }
+         #nickname{
+            position: absolute;
+            left: 0px;
+            right: 10px;
+            top: 60px;
+           
+        }
+         #nickname2{
+            position: absolute;
+            left: 220px;
+            right: 10px;
+            top: 60px;
+           
+        }
+		</style>
+	</head>
+<body>
+
+	<form id="form" onsubmit="return false;">
+     <p id="ip">İp Girin:</p>
+    <input type="text" id="userInput" />
+    <input type="submit" id="yaz" onclick="othername();" />
+	</form>
+	<div id="nickWrap">
+		<p id="ip4">Nick Girin:</p>
+		<p id="nickError"></p>
+			<form id="setNick">
+				<input size="35" id="nickname"></input>
+				<input type="submit" id="nickname2"></input>
+			</form>	
+	
+	</div>
+
+
+
+	<div id="contentWrap">
+		<div id="chattWrap">
+			<div id="chat"></div>
+			<form id="send-message">
+					<input size="35" id="message"></input>
+					<input type="submit"></input>
+			</form>
+			
+		</div>
+		<div id="users"></div>
+	</div>
+	
+	<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+
+
+</script>
+	<script>
+
+			function othername() {
+			
+				var input = document.getElementById("userInput").value;
+				if(input!=="")
+				{
+					
+		jQuery(function ($){
+			var izin=0;
+			var socket=io.connect();
+			var $nickForm =$('#setNick');
+			var $nickError =$('#nickError');
+			var $nickBox =$('#nickname');
+			var $users = $('#users');
+			var $messageForm = $('#send-message');
+			var $messageBox = $('#message');
+			var $chat = $('#chat');
+		
+	
+			$nickForm.submit(function(e){
+				e.preventDefault();
+				socket.emit('new user',$nickBox.val(),function(data){
+				
+					if(data){
+						$('#nickWrap').hide();
+						$('#form').hide();
+						
+						$('#contentWrap').show();
+					}else{
+						$nickError.html('That username is already taken! Try again.');
+					
+					}
+				
+				
+				});
+				$nickBox.val('');
+			});
+		
+				socket.on('usernames',function(data){
+			 var html ='';
+			 for( i=0;i < data.length; i++){
+				html+= data[i] + '<br/>'
+
+			 }
+				$users.html(html);
+			});
+
+			
+		
+		
+		
+			$messageForm.submit(function(e){
+				e.preventDefault();
+				socket.emit('send message',$messageBox.val(),function(data){
+					$chat.append('<span class="error">'+data+"</span><br/>");
+				
+				});
+				$messageBox.val('');
+			});
+			socket.on('new message',function(data){
+				$chat.append('<span class="msg"><b>'+data.nick +': </b>' + data.msg +"</span><br/>");
+			});
+			socket.on('whisper',function(data){
+				
+				if(izin==0){
+				var r = confirm("özel mesajın isteği");
+				
+				
+				
+				if (r == true) {
+			$chat.append('<span class="whisper"><b>'+data.nick +': </b>' + data.msg +"</span><br/>");
+				
+				$messageBox.val('a '+data.nick + ' '+"(kullanıcısına yollanan)"+data.msg);
+				
+				socket.emit('send message',$messageBox.val(),function(data){
+					$chat.append('<span class="a">'+data.nick+"</span><br/>");
+				
+				});
+				$messageBox.val('');
+					izin=1;
+				}
+				else
+				{
+					
+						$messageBox.val('/w '+data.nick + ' REDDETTİ');
+				
+				socket.emit('send message',$messageBox.val(),function(data){
+					$chat.append('<span class="whisper">'+data+"</span><br/>");
+				
+				});
+				$messageBox.val('');
+			
+				 
+				}
+				}
+				else{
+				$chat.append('<span class="whisper"><b>'+data.nick +': </b>' + data.msg +"</span><br/>");
+				
+				$messageBox.val('a '+data.nick + ' '+"(kullanıcısına yollanan)"+data.msg);
+				
+				socket.emit('send message',$messageBox.val(),function(data){
+					$chat.append('<span class="a">'+data.nick+"</span><br/>");
+				
+				});
+				$messageBox.val('');
+				}
+				
+				
+				
+			});
+			
+			socket.on('a',function(data){
+				//var r = confirm("özel mesajın isteği");
+				
+			$chat.append('<span class="a"><b>'+data.nick +': </b>' + data.msg +"</span><br/>");
+				
+				
+
+				
+			});
+			
+		});
+
+    				alert("KULLANICI İP :"+input);
+				}
+				else
+				{
+					alert("değer girin");
+				}
+    	
+}
+	</script>
+
+	
+
+	<button class="button"  onclick="window.location.href='http://localhost/dolar/login.php'">Logout</button>
+</body>	
+</html>
